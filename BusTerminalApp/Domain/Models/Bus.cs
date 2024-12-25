@@ -2,8 +2,8 @@
 
 public class Bus
 {
-    private string Id { get; set; }
-    private List<DateTime> BookedTimes { get; set; }
-    private string Name { get; set; }
-    private int Capacity { get; set; }
+    public string Id { get; set; }
+    public List<DateTime> BookedTimes { get; set; }
+    public string Name { get; set; }
+    public int Capacity { get; set; }
 }
