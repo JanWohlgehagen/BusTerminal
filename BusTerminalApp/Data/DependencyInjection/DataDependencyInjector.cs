@@ -8,7 +8,7 @@ public static class DataDependencyInjector
 {
     public static void InjectDataLayer(IServiceCollection serviceCollection)
     {
-        serviceCollection.AddScoped<IBusRepository, BusRespository>();
+        serviceCollection.AddSingleton<IBusRepository, BusRespository>();
         
     }
     
