@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Services;
+using Data.Models;
 using Domain.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,21 +18,21 @@ public class BusController : ControllerBase
         _busService = BusService;
     }
 
-    [HttpPost(Name = "ResetAndGenerateMockData")]
+    [HttpPost("ResetAndGenerateMockData")]
     public IActionResult ResetAndGenerateMockData()
     {
          _busService.ResetAndGenerateMockData();
         return Ok("Mock data generated.");
     }
 
-    [HttpGet(Name = "GetAvailableBuses")]
+    [HttpGet("GetAvailableBuses")]
     public IActionResult GetAvailableBuses(DateTime startTime, DateTime endTime, int distance)
     {
-        _busService.GetAvailableBuses(startTime, endTime, distance);
-        return Ok("Available buses fetched.");
+        List<BusDTO> buses = _busService.GetAvailableBuses(startTime, endTime, distance);
+        return Ok(buses);
     }
     
-    [HttpPost(Name = "PostBooking")]
+    [HttpPost("PostBooking")]
     public IActionResult PostBooking(string busId, DateTime startTime, DateTime endTime)
     {
         BusDTO bus = _busService.BookBus(busId, startTime, endTime);

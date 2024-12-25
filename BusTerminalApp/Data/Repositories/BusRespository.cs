@@ -20,6 +20,7 @@ public class BusRespository: IBusRepository
 
     public List<Bus> GetMockData()
     {
+        SetMockData();
         return _mockData;
     }
 

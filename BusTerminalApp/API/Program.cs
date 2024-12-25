@@ -14,6 +14,24 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    var url = "http://localhost:5267/swagger";
+    Console.WriteLine($"Opening Swagger at: {url}");
+    try
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to open browser: {ex.Message}");
+    }
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
 

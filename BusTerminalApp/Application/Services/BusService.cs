@@ -101,6 +101,11 @@ public class BusService : IBusService
             throw new ArgumentException("Start and end time must be on the same day.");
         }
 
+        if (startTime < DateTime.Now)
+        {
+            throw new ArgumentException("Start time cannot be in the past.");
+        }
+
         return startTime.Date;
     }
 
