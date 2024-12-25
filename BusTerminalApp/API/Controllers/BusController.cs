@@ -7,8 +7,8 @@ namespace API.Controllers;
 [Route("[controller]")]
 public class BusController : ControllerBase
 {
-    [HttpGet(Name = "GetAvailableBusses")]
-    public IActionResult GetAvailableBusses()
+    [HttpGet(Name = "GetAvailableBuses")]
+    public IActionResult GetAvailableBuses()
     {
         // Returns a list of BusDTOs
         return Ok("Everything works on my maine...");
