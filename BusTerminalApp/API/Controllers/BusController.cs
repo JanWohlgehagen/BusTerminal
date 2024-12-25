@@ -22,7 +22,7 @@ public class BusController : ControllerBase
     public IActionResult ResetAndGenerateMockData()
     {
          _busService.ResetAndGenerateMockData();
-        return Ok("Mock data generated.");
+        return Ok("Mock data generated. here is a DateTime to use for testing:   2025-07-21T17:32:28Z   ");
     }
 
     [HttpGet("GetAvailableBuses")]
