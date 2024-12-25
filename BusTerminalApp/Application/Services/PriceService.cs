@@ -11,7 +11,7 @@ public class PriceService : IPriceService
             throw new ArgumentException("We need a distance to calculate the price.");
         }
         var startfee = 500;
-        decimal distanceRate = 10;
+        decimal distanceRate = 10m;
         if (bookingDay == DayOfWeek.Saturday)
         {
             startfee = 750;
@@ -20,7 +20,7 @@ public class PriceService : IPriceService
         else if (bookingDay == DayOfWeek.Sunday)
         {
             startfee = 1000;
-            distanceRate = 15;
+            distanceRate = 15m;
         }
 
         return startfee + (distanceRate * distance);
