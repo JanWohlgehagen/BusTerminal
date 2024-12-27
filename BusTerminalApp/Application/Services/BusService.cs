@@ -89,7 +89,7 @@ public class BusService : IBusService
         return availableBuses;
     }
 
-    public DateTime validateTime(DateTime startTime, DateTime endTime)
+    private DateTime validateTime(DateTime startTime, DateTime endTime)
     {
         if (endTime < startTime)
         {
