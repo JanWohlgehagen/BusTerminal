@@ -17,7 +17,7 @@ public class BusService : IBusService
 
     public BusDTO BookBus(string busId, DateTime startTime, DateTime endTime)
     {
-        DateTime bookingDate = validateTime(startTime, endTime);
+        DateTime bookingDate = ValidateTime(startTime, endTime);
 
         Bus bus = _busRepository.GetMockData().Find(b => b.Id == busId) ?? throw new ArgumentException("Bus not found.");
 
@@ -29,15 +29,15 @@ public class BusService : IBusService
             }
         }
 
-        bus.BookedTimes.Add(bookingDate);
+            bus.BookedTimes.Add(bookingDate);
 
-        return new BusDTO
-        {
-            Id = bus.Id,
-            Name = bus.Name,
-            Capacity = bus.Capacity,
-            BookedTimes = bus.BookedTimes
-        };
+            return new BusDTO
+            {
+                Id = bus.Id,
+                Name = bus.Name,
+                Capacity = bus.Capacity,
+                BookedTimes = bus.BookedTimes
+            };
     }
 
     public List<BusDTO> GetAvailableBuses(DateTime startTime, DateTime endTime, int distance)
@@ -47,7 +47,7 @@ public class BusService : IBusService
 
         var price = _priceService.GetPrice(startTime.DayOfWeek, distance);
 
-        var bookingDate = validateTime(startTime, endTime);
+        var bookingDate = ValidateTime(startTime, endTime);
 
         foreach (var bus in allBuses)
         {
@@ -89,7 +89,7 @@ public class BusService : IBusService
         return availableBuses;
     }
 
-    private DateTime validateTime(DateTime startTime, DateTime endTime)
+    public DateTime ValidateTime(DateTime startTime, DateTime endTime)
     {
         if (endTime < startTime)
         {
