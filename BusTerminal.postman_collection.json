@@ -1,0 +1,1711 @@
+{
+	"info": {
+		"_postman_id": "239eaf50-b1c8-4745-9e93-9316b0b74d82",
+		"name": "BusTerminal",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23009629",
+		"_collection_link": "https://planetary-meadow-661597.postman.co/workspace/Beefy-beach-boys~902916f6-3ecd-4a14-aaa0-cbde0a1cedbc/collection/34914162-239eaf50-b1c8-4745-9e93-9316b0b74d82?action=share&source=collection_link&creator=23009629"
+	},
+	"item": [
+		{
+			"name": "GetAvailableBuses",
+			"item": [
+				{
+					"name": "ResetAndGenerateMockData",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 300ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(300);\r",
+									"});\r",
+									"pm.test(\"Successful POST request\", function () {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+									"});\r",
+									"pm.test(\"Body is correct\", function () {\r",
+									"    pm.response.to.have.body(\"Mock data generated. here is a DateTime to use for testing:   2025-07-21T17:32:28Z   \");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/ResetAndGenerateMockData",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"ResetAndGenerateMockData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Condition 5",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert distance is valid (greater than 0)\r",
+									"// Assert valid price is returned\r",
+									"pm.test(\"Valid distance - does not throw exception in price calculation\", function () {\r",
+									"    const distance = parseFloat(pm.environment.get('distance'));\r",
+									"    pm.expect(distance).to.be.above(0);\r",
+									"\r",
+									"    // response will be 200 only if the price is calculated correctly and this requires a distance above 0\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    // Check price in the first bus object\r",
+									"    pm.expect(response[0]).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"    pm.expect(response[0].price).to.be.above(0);\r",
+									"});\r",
+									"\r",
+									"// Assert valid bookingDate\r",
+									"pm.test(\"Start and End Time is valid\", function () {\r",
+									"    const startTimeNow = pm.environment.get('startTimeNow');\r",
+									"    const endTimeNowPlusOneHour = pm.environment.get('endTimeNowPlusOneHour');\r",
+									"\r",
+									"    // Check if the start time is in the past\r",
+									"    const startTime = new Date(startTimeNow);\r",
+									"    const currentTime = new Date();\r",
+									"    pm.expect(startTime).to.be.greaterThan(currentTime, \"Start time should not be in the past\");\r",
+									"\r",
+									"    // Check if the start time and end time are on the same day\r",
+									"    const startDate = startTime.toISOString().split('T')[0];\r",
+									"    const endDate = new Date(endTimeNowPlusOneHour).toISOString().split('T')[0];\r",
+									"    pm.expect(startDate).to.equal(endDate, \"Start time and end time must be on the same day\");\r",
+									"\r",
+									"    // Check if end time is after start time\r",
+									"    const endTime = new Date(endTimeNowPlusOneHour);\r",
+									"    pm.expect(endTime).to.be.greaterThan(startTime, \"End time cannot be before start time\");\r",
+									"});\r",
+									"\r",
+									"// The Bus \"bookedTimes\" is always null in the response, but the bus wont be returned as available on the test date, if it is already booked on that test date.\r",
+									"// Assert the bus is available - no busses are booked yet.\r",
+									"pm.test(\"All 4 buses are available on the test date\", function () {\r",
+									"    const busIdsToCheck = [\"1\", \"2\", \"3\", \"4\"]; // The IDs of the buses to check if they're available\r",
+									"\r",
+									"    busIdsToCheck.forEach((busIdToCheck) => {\r",
+									"        const bus = response.find((bus) => bus.id === busIdToCheck);\r",
+									"        pm.expect(bus).to.not.be.undefined;\r",
+									"    });\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const distance = [1, 0];\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Monday price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert that the price follows the backends logic for price calulcation for a monday\r",
+									"// All buses prices are the same\r",
+									"pm.test(\"Price calculation for a Monday is correct\", function () {\r",
+									"    const bookingDay = new Date(pm.environment.get('nextMonday'));\r",
+									"    const distance = 100;\r",
+									"    const expectedPrice = 500 + (10 * distance); // 500 + (10 * 100) = 1500\r",
+									"\r",
+									"    pm.expect(response[0].price).to.eql(expectedPrice);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function getNextDayOfWeek(targetDay) {\r",
+									"    const today = new Date();\r",
+									"    const currentDay = today.getDay();\r",
+									"    const daysUntilTarget = (targetDay + 7 - currentDay) % 7;\r",
+									"    const targetDate = new Date(today.getTime() + (daysUntilTarget + 7) * 24 * 60 * 60 * 1000); // to always get next weeks date\r",
+									"    return targetDate;\r",
+									"}\r",
+									"\r",
+									"function addOneHourToDate(date) {\r",
+									"    const validDate = new Date(date);\r",
+									"    const newDate = new Date(validDate.getTime() + 60 * 60 * 1000);\r",
+									"    return newDate.toISOString();\r",
+									"}\r",
+									"\r",
+									"const nextMonday = getNextDayOfWeek(1);\r",
+									"const nextMondayPlusOneHour = addOneHourToDate(nextMonday);\r",
+									"\r",
+									"const nextSaturday = getNextDayOfWeek(6);\r",
+									"const nextSaturdayPlusOneHour = addOneHourToDate(nextSaturday);\r",
+									"\r",
+									"const nextSunday = getNextDayOfWeek(0);\r",
+									"const nextSundayPlusOneHour = addOneHourToDate(nextSunday);\r",
+									"\r",
+									"const distance = [100, 0]; // 100 to get some clearer variance in the prices\r",
+									"\r",
+									"pm.environment.set('nextMonday', nextMonday.toISOString());\r",
+									"pm.environment.set('nextMondayPlusOneHour', nextMondayPlusOneHour);\r",
+									"pm.environment.set('nextSaturday', nextSaturday.toISOString());\r",
+									"pm.environment.set('nextSaturdayPlusOneHour', nextSaturdayPlusOneHour);\r",
+									"pm.environment.set('nextSunday', nextSunday.toISOString());\r",
+									"pm.environment.set('nextSundayPlusOneHour', nextSundayPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{nextMonday}}&endTime={{nextMondayPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{nextMonday}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{nextMondayPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Saturday Price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert that the price follows the backends logic for price calulcation for a monday\r",
+									"// All buses prices are the same\r",
+									"pm.test(\"Price calculation for a Saturday is correct\", function () {\r",
+									"    const bookingDay = new Date(pm.environment.get('nextSaturday'));\r",
+									"    const distance = 100;\r",
+									"    const expectedPrice = 750 + (12.5 * distance); // 750 + (12.5 * 100) = 2000\r",
+									"\r",
+									"    pm.expect(response[0].price).to.eql(expectedPrice);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function getNextDayOfWeek(targetDay) {\r",
+									"    const today = new Date();\r",
+									"    const currentDay = today.getDay();\r",
+									"    const daysUntilTarget = (targetDay + 7 - currentDay) % 7;\r",
+									"    const targetDate = new Date(today.getTime() + (daysUntilTarget + 7) * 24 * 60 * 60 * 1000); // to always get next weeks date\r",
+									"    return targetDate;\r",
+									"}\r",
+									"\r",
+									"function addOneHourToDate(date) {\r",
+									"    const validDate = new Date(date);\r",
+									"    const newDate = new Date(validDate.getTime() + 60 * 60 * 1000);\r",
+									"    return newDate.toISOString();\r",
+									"}\r",
+									"\r",
+									"const nextMonday = getNextDayOfWeek(1);\r",
+									"const nextMondayPlusOneHour = addOneHourToDate(nextMonday);\r",
+									"\r",
+									"const nextSaturday = getNextDayOfWeek(6);\r",
+									"const nextSaturdayPlusOneHour = addOneHourToDate(nextSaturday);\r",
+									"\r",
+									"const nextSunday = getNextDayOfWeek(0);\r",
+									"const nextSundayPlusOneHour = addOneHourToDate(nextSunday);\r",
+									"\r",
+									"const distance = [100, 0]; // 100 to get some clearer variance in the prices\r",
+									"\r",
+									"pm.environment.set('nextMonday', nextMonday.toISOString());\r",
+									"pm.environment.set('nextMondayPlusOneHour', nextMondayPlusOneHour);\r",
+									"pm.environment.set('nextSaturday', nextSaturday.toISOString());\r",
+									"pm.environment.set('nextSaturdayPlusOneHour', nextSaturdayPlusOneHour);\r",
+									"pm.environment.set('nextSunday', nextSunday.toISOString());\r",
+									"pm.environment.set('nextSundayPlusOneHour', nextSundayPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{nextSaturday}}&endTime={{nextSaturdayPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{nextSaturday}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{nextSaturdayPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Sunday Price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert that the price follows the backends logic for price calulcation for a monday\r",
+									"// All buses prices are the same\r",
+									"pm.test(\"Price calculation for a Sunday is correct\", function () {\r",
+									"    const bookingDay = new Date(pm.environment.get('nextSunday'));\r",
+									"    const distance = 100;\r",
+									"\r",
+									"    const expectedPrice = 1000 + (15 * distance); // 1000 + (15 * 100) = 2500\r",
+									"\r",
+									"    pm.expect(response[0].price).to.eql(expectedPrice);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function getNextDayOfWeek(targetDay) {\r",
+									"    const today = new Date();\r",
+									"    const currentDay = today.getDay();\r",
+									"    const daysUntilTarget = (targetDay + 7 - currentDay) % 7;\r",
+									"    const targetDate = new Date(today.getTime() + (daysUntilTarget + 7) * 24 * 60 * 60 * 1000); // to always get next weeks date\r",
+									"    return targetDate;\r",
+									"}\r",
+									"\r",
+									"function addOneHourToDate(date) {\r",
+									"    const validDate = new Date(date);\r",
+									"    const newDate = new Date(validDate.getTime() + 60 * 60 * 1000);\r",
+									"    return newDate.toISOString();\r",
+									"}\r",
+									"\r",
+									"const nextMonday = getNextDayOfWeek(1);\r",
+									"const nextMondayPlusOneHour = addOneHourToDate(nextMonday);\r",
+									"\r",
+									"const nextSaturday = getNextDayOfWeek(6);\r",
+									"const nextSaturdayPlusOneHour = addOneHourToDate(nextSaturday);\r",
+									"\r",
+									"const nextSunday = getNextDayOfWeek(0);\r",
+									"const nextSundayPlusOneHour = addOneHourToDate(nextSunday);\r",
+									"\r",
+									"const distance = [100, 0]; // 100 to get some clearer variance in the prices\r",
+									"\r",
+									"pm.environment.set('nextMonday', nextMonday.toISOString());\r",
+									"pm.environment.set('nextMondayPlusOneHour', nextMondayPlusOneHour);\r",
+									"pm.environment.set('nextSaturday', nextSaturday.toISOString());\r",
+									"pm.environment.set('nextSaturdayPlusOneHour', nextSaturdayPlusOneHour);\r",
+									"pm.environment.set('nextSunday', nextSunday.toISOString());\r",
+									"pm.environment.set('nextSundayPlusOneHour', nextSundayPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{nextSunday}}&endTime={{nextSundayPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{nextSunday}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{nextSundayPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus to manipulate mock",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeTomorrow = new Date(new Date().getTime() + 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeTomorrow = new Date(new Date().getTime() + 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeTomorrowPlusOneHour = new Date(new Date().getTime() + 24 * 62 * 60 * 1000).toISOString();\r",
+									"\r",
+									"const busId = \"4\";\r",
+									"\r",
+									"pm.environment.set('startTimeTomorrow', startTimeTomorrow);\r",
+									"pm.environment.set('endTimeTomorrow', endTimeTomorrow);\r",
+									"pm.environment.set('endTimeTomorrowPlusOneHour', endTimeTomorrowPlusOneHour);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeTomorrow}}&endTime={{endTimeTomorrowPlusOneHour}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeTomorrow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeTomorrowPlusOneHour}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Condition 4",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const distance = [1, 0];\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert distance is valid (greater than 0)\r",
+									"// Assert valid price is returned\r",
+									"pm.test(\"Valid distance - does not throw exception in price calculation\", function () {\r",
+									"    const distance = parseFloat(pm.environment.get('distance'));\r",
+									"    pm.expect(distance).to.be.above(0);\r",
+									"\r",
+									"    // response will be 200 only if the price is calculated correctly and this requires a distance above 0\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    // Check price in the first bus object\r",
+									"    pm.expect(response[0]).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"    pm.expect(response[0].price).to.be.above(0);\r",
+									"});\r",
+									"\r",
+									"// Assert valid bookingDate\r",
+									"pm.test(\"Start and End Time is valid\", function () {\r",
+									"    const startTimeNow = pm.environment.get('startTimeNow');\r",
+									"    const endTimeNowPlusOneHour = pm.environment.get('endTimeNowPlusOneHour');\r",
+									"\r",
+									"    // Check if the start time is in the past\r",
+									"    const startTime = new Date(startTimeNow);\r",
+									"    const currentTime = new Date();\r",
+									"    pm.expect(startTime).to.be.greaterThan(currentTime, \"Start time should not be in the past\");\r",
+									"\r",
+									"    // Check if the start time and end time are on the same day\r",
+									"    const startDate = startTime.toISOString().split('T')[0];\r",
+									"    const endDate = new Date(endTimeNowPlusOneHour).toISOString().split('T')[0];\r",
+									"    pm.expect(startDate).to.equal(endDate, \"Start time and end time must be on the same day\");\r",
+									"\r",
+									"    // Check if end time is after start time\r",
+									"    const endTime = new Date(endTimeNowPlusOneHour);\r",
+									"    pm.expect(endTime).to.be.greaterThan(startTime, \"End time cannot be before start time\");\r",
+									"});\r",
+									"\r",
+									"// The Bus \"bookedTimes\" is always null in the response, but the bus wont be returned as available on the test date, if it is already booked on that test date.\r",
+									"// Assert the bus is available on the test date, since the bus is booked, but on another date\r",
+									"pm.test(\"Bus available on test date, despite having some bookedDates\", function () {\r",
+									"    const busIdToCheck = \"4\"; // The ID of the bus to check if it's booked\r",
+									"    const bus = response.find((bus) => bus.id === busIdToCheck);\r",
+									"    pm.expect(bus).to.not.be.undefined;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Condition 3",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeTomorrow = new Date(new Date().getTime() + 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeTomorrow = new Date(new Date().getTime() + 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeTomorrowPlusOneHour = new Date(new Date().getTime() + 24 * 62 * 60 * 1000).toISOString();\r",
+									"\r",
+									"const distance = [1, 0];\r",
+									"\r",
+									"pm.environment.set('startTimeTomorrow', startTimeTomorrow);\r",
+									"pm.environment.set('endTimeTomorrow', endTimeTomorrow);\r",
+									"pm.environment.set('endTimeTomorrowPlusOneHour', endTimeTomorrowPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert the response is an array\r",
+									"pm.test(\"Response is an array\", function () {\r",
+									"    pm.expect(response).to.be.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Assert that each bus in the response has the required properties\r",
+									"pm.test(\"Each bus has required properties\", function () {\r",
+									"    response.forEach((bus) => {\r",
+									"        pm.expect(bus).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"        pm.expect(bus).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"        pm.expect(bus).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"        pm.expect(bus).to.have.property(\"bookedTimes\").that.is.null; // we dont show this, but its on the DTO\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"//// split between generic tests and tests based on our decision tables \\\\\\\\\r",
+									"\r",
+									"// Assert distance is valid (greater than 0)\r",
+									"// Assert valid price is returned\r",
+									"pm.test(\"Valid distance - does not throw exception in price calculation\", function () {\r",
+									"    const distance = parseFloat(pm.environment.get('distance'));\r",
+									"    pm.expect(distance).to.be.above(0);\r",
+									"\r",
+									"    // response will be 200 only if the price is calculated correctly and this requires a distance above 0\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    // Check price in the first bus object\r",
+									"    pm.expect(response[0]).to.have.property(\"price\").that.is.a(\"number\");\r",
+									"    pm.expect(response[0].price).to.be.above(0);\r",
+									"});\r",
+									"\r",
+									"// Assert valid bookingDate\r",
+									"pm.test(\"Start and End Time is valid\", function () {\r",
+									"    const startTimeNow = pm.environment.get('startTimeNow');\r",
+									"    const endTimeNowPlusOneHour = pm.environment.get('endTimeNowPlusOneHour');\r",
+									"\r",
+									"    // Check if the start time is in the past\r",
+									"    const startTime = new Date(startTimeNow);\r",
+									"    const currentTime = new Date();\r",
+									"    pm.expect(startTime).to.be.greaterThan(currentTime, \"Start time should not be in the past\");\r",
+									"\r",
+									"    // Check if the start time and end time are on the same day\r",
+									"    const startDate = startTime.toISOString().split('T')[0];\r",
+									"    const endDate = new Date(endTimeNowPlusOneHour).toISOString().split('T')[0];\r",
+									"    pm.expect(startDate).to.equal(endDate, \"Start time and end time must be on the same day\");\r",
+									"\r",
+									"    // Check if end time is after start time\r",
+									"    const endTime = new Date(endTimeNowPlusOneHour);\r",
+									"    pm.expect(endTime).to.be.greaterThan(startTime, \"End time cannot be before start time\");\r",
+									"});\r",
+									"\r",
+									"// The Bus \"bookedTimes\" is always null in the response, but the bus wont be returned as available on the test date, if it is already booked on that test date.\r",
+									"// Assert the bus is unavailable on the test date, since the bus is booked on the test date\r",
+									"pm.test(\"Bus not available on test date, because it is already booked on the same date\", function () {\r",
+									"    const busIdToCheck = \"4\"; // The ID of the bus to check if it's booked\r",
+									"    const bus = response.find((bus) => bus.id === busIdToCheck);\r",
+									"    pm.expect(bus).to.be.undefined;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{startTimeTomorrow}}&endTime={{endTimeTomorrowPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeTomorrow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeTomorrowPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Condition 2",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeYesterday = new Date(new Date().getTime() - 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeYesterday = new Date(new Date().getTime() - 24 * 61 * 60 * 1000).toISOString();\r",
+									"const endTimeYesterdayPlusOneHour = new Date(new Date().getTime() - 24 * 62 * 60 * 1000).toISOString();\r",
+									"\r",
+									"const distance = [1, 0];\r",
+									"\r",
+									"pm.environment.set('startTimeYesterday', startTimeYesterday);\r",
+									"pm.environment.set('endTimeYesterday', endTimeYesterday);\r",
+									"pm.environment.set('endTimeYesterdayPlusOneHour', endTimeYesterdayPlusOneHour);\r",
+									"pm.environment.set('distance', distance[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.text();\r",
+									"\r",
+									"// Assert the response status code is 500\r",
+									"pm.test(\"Status code is 500, because the test date is in the past\", function () {\r",
+									"    pm.response.to.have.status(500);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Body matches System.ArgumentException string 'End time cannot be before start time.'\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"System.ArgumentException: End time cannot be before start time.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{startTimeYesterday}}&endTime={{endTimeYesterdayPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeYesterday}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeYesterdayPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAvailableBuses Condition 1",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const distance = [1, 0];\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('distance', distance[1]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.text();\r",
+									"\r",
+									"// Assert the response status code is 500\r",
+									"pm.test(\"Status code is 500, because distance <= 0\", function () {\r",
+									"    pm.response.to.have.status(500);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Body matches System.ArgumentException string 'We need a distance to calculate the price.'\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"System.ArgumentException: We need a distance to calculate the price.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/GetAvailableBuses?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&distance={{distance}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"GetAvailableBuses"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "distance",
+									"value": "{{distance}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "BookBus",
+			"item": [
+				{
+					"name": "ResetAndGenerateMockData",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 300ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(300);\r",
+									"});\r",
+									"pm.test(\"Successful POST request\", function () {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+									"});\r",
+									"pm.test(\"Body is correct\", function () {\r",
+									"    pm.response.to.have.body(\"Mock data generated. here is a DateTime to use for testing:   2025-07-21T17:32:28Z   \");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5267/Bus/ResetAndGenerateMockData",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"ResetAndGenerateMockData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Succesful",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"4\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response JSON\r",
+									"const response = pm.response.json();\r",
+									"\r",
+									"// Assert the response status code is 200\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Assert that the bus in the response has the required properties\r",
+									"pm.test(\"Bus has required properties\", function () {\r",
+									"    pm.expect(response).to.have.property(\"id\").that.is.a(\"string\"); // ID is a string, we just gave them 1, 2, 3 etc.\r",
+									"    pm.expect(response).to.have.property(\"name\").that.is.a(\"string\");\r",
+									"    pm.expect(response).to.have.property(\"capacity\").that.is.a(\"number\");\r",
+									"    pm.expect(response).to.have.property(\"bookedTimes\").that.is.an(\"array\");\r",
+									"const todayISO = new Date(); // Get today\r",
+									"todayISO.setHours(1, 0, 0, 0); // Set to 1:00:00 AM local time\r",
+									"\r",
+									"// Generate the ISO string and remove unnecessary milliseconds\r",
+									"let formattedTodayISO = todayISO.toISOString().slice(0, -5) + \"Z\"; // Remove milliseconds and append \"Z\" (UTC)\r",
+									"\r",
+									"console.log(\"Generated Today ISO:\", formattedTodayISO);\r",
+									"\r",
+									"// Verify the array contains the given date\r",
+									"const containsToday = response.bookedTimes.some(time => time === formattedTodayISO);\r",
+									"pm.expect(containsToday).to.be.true;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Already Booked",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"4\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify ArgumentException is thrown\", function () {\r",
+									"    // Parse the response body\r",
+									"    let responseText = pm.response.text();\r",
+									"    \r",
+									"    // Check the HTTP status code\r",
+									"    pm.expect(pm.response.code).to.eql(500); // Adjust if a different status code is used\r",
+									"\r",
+									"    // Check that the response text matches the expected exception message\r",
+									"    pm.expect(responseText).to.include(\"Bus is already booked at that time.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Invalid busid",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() + 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"Ikke Eksisterende ID\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify ArgumentException is thrown\", function () {\r",
+									"    // Parse the response body\r",
+									"    let response = pm.response.text();\r",
+									"    \r",
+									"    // Check the HTTP status code\r",
+									"    pm.expect(pm.response.code).to.eql(500);\r",
+									"    \r",
+									"    // Check the error message in the response\r",
+									"    pm.expect(response).to.include(\"Bus not found.\"); // Adjust the key if it's named differently\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Invalid EndDate",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() - 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() - 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneHour = new Date(new Date().getTime() - 121 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"3\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneHour', endTimeNowPlusOneHour);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify ArgumentException is thrown\", function () {\r",
+									"    // Parse the response body\r",
+									"    let response = pm.response.text();\r",
+									"    \r",
+									"    // Check the HTTP status code\r",
+									"    pm.expect(pm.response.code).to.eql(500); // Assuming 400 Bad Request is returned for exceptions\r",
+									"    \r",
+									"    // Check the error message in the response\r",
+									"    pm.expect(response).to.include(\"End time cannot be before start time.\"); // Adjust the key if it's named differently\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneHour}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneHour}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Invalid different dates",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneDay = new Date(new Date().getTime() + 25*60 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"3\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneDay', endTimeNowPlusOneDay);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify ArgumentException is thrown\", function () {\r",
+									"    // Parse the response body\r",
+									"    let response = pm.response.text();\r",
+									"    \r",
+									"    // Check the HTTP status code\r",
+									"    pm.expect(pm.response.code).to.eql(500);\r",
+									"    \r",
+									"    // Check the error message in the response\r",
+									"    pm.expect(response).to.include(\"Start and end time must be on the same day.\"); // Adjust the key if it's named differently\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneDay}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneDay}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "BookBus Invalid starttime",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const startTimeNow = new Date(new Date().getTime() - 61 * 60 * 1000).toISOString(); // get utc+1 +1min for delay\r",
+									"const endTimeNow = new Date(new Date().getTime() + 61 * 60 * 1000).toISOString();\r",
+									"const endTimeNowPlusOneDay = new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(); // utc+1 +1min+1hour\r",
+									"\r",
+									"const busId = \"3\";\r",
+									"\r",
+									"pm.environment.set('startTimeNow', startTimeNow);\r",
+									"pm.environment.set('endTimeNow', endTimeNow);\r",
+									"pm.environment.set('endTimeNowPlusOneDay', endTimeNowPlusOneDay);\r",
+									"pm.environment.set('busId', busId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify ArgumentException is thrown\", function () {\r",
+									"    // Parse the response body\r",
+									"    let response = pm.response.text();\r",
+									"    \r",
+									"    // Check the HTTP status code\r",
+									"    pm.expect(pm.response.code).to.eql(500);\r",
+									"    \r",
+									"    // Check the error message in the response\r",
+									"    pm.expect(response).to.include(\"Start time cannot be in the past.\"); // Adjust the key if it's named differently\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5267/Bus/PostBooking?startTime={{startTimeNow}}&endTime={{endTimeNowPlusOneDay}}&busId={{busId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5267",
+							"path": [
+								"Bus",
+								"PostBooking"
+							],
+							"query": [
+								{
+									"key": "startTime",
+									"value": "{{startTimeNow}}"
+								},
+								{
+									"key": "endTime",
+									"value": "{{endTimeNowPlusOneDay}}"
+								},
+								{
+									"key": "busId",
+									"value": "{{busId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
