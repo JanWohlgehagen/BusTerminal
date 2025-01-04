@@ -14,7 +14,7 @@ public class BusRespository: IBusRepository
             new Bus { Id = "1", Name = "Bus Arnold", Capacity = 10, BookedTimes = new List<DateTime>() },
             new Bus { Id = "2", Name = "Bus Bob", Capacity = 40, BookedTimes = new List<DateTime>() },
             new Bus { Id = "3", Name = "Bus Connery", Capacity = 30, BookedTimes = new List<DateTime>() },
-            new Bus { Id = "4", Name = "Bus Drew", Capacity = 70, BookedTimes = new List<DateTime>() },
+            new Bus { Id = "4", Name = "Bus Drew", Capacity = 70, BookedTimes = new List<DateTime>(){ DateTime.Today.AddDays(1)} },
         };
     }
 
